@@ -1,648 +1,692 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:sans-serif;background:#f5f7f5;}
-#app{display:flex;flex-direction:column;height:100vh;min-height:620px;}
-#topbar{background:#fff;border-bottom:1px solid #e0e8e4;padding:0 16px;display:flex;align-items:center;gap:8px;height:50px;z-index:1000;position:relative;flex-wrap:wrap;}
-#topbar-logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:#0F6E56;}
-.dot{width:10px;height:10px;border-radius:50%;background:#1D9E75;}
-.vtab{background:none;border:1px solid #d0ddd8;padding:5px 13px;border-radius:8px;font-size:12px;cursor:pointer;color:#666;transition:all .15s;}
-.vtab.active{background:#1D9E75;color:#fff;border-color:#1D9E75;font-weight:600;}
-#loc-btn{margin-left:auto;background:#f0faf5;color:#0F6E56;border:1px solid #9FE1CB;border-radius:8px;padding:7px 13px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500;}
-#loc-btn:hover{background:#1D9E75;color:#fff;border-color:#1D9E75;}
-#main{flex:1;display:flex;overflow:hidden;}
-#sidebar{width:275px;background:#fff;border-right:1px solid #e0e8e4;display:flex;flex-direction:column;overflow:hidden;}
-#stats-row{display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid #e0e8e4;}
-.sc{flex:1;background:#f5f7f5;border-radius:8px;padding:7px 10px;}
-.sl{font-size:10px;color:#888;}
-.sv{font-size:18px;font-weight:700;color:#222;}
-.sv.red{color:#D85A30;}.sv.green{color:#1D9E75;}
-#focos-list{flex:1;overflow-y:auto;padding:8px;}
-.fc{background:#fff;border:1px solid #e8eee8;border-radius:10px;padding:9px 11px;margin-bottom:7px;cursor:pointer;transition:border-color .15s;}
-.fc:hover{border-color:#1D9E75;}
-.fc.sel{border-color:#1D9E75;border-width:2px;}
-.badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;}
-.ba{background:#FAECE7;color:#993C1D;}
-.bm{background:#FAEEDA;color:#854F0B;}
-.bb{background:#EAF3DE;color:#3B6D11;}
-#map-wrap{flex:1;position:relative;}
-#map{width:100%;height:100%;}
-#upload-btn{position:absolute;bottom:20px;right:20px;z-index:600;background:#1D9E75;color:#fff;border:none;border-radius:14px;padding:14px 22px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.2);}
-#upload-btn:hover{background:#0F6E56;}
-#overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:2000;}
-#overlay.open{display:flex;}
-#modal{background:#fff;border-radius:18px;padding:22px;width:350px;max-height:92vh;overflow-y:auto;}
-#modal h3{font-size:15px;font-weight:700;color:#0F6E56;margin-bottom:2px;}
-#modal .sub{font-size:12px;color:#888;margin-bottom:14px;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dengue Zero - Registro de Focos</title>
+    <meta name="description" content="App para registro de focos de dengue">
+    <meta name="theme-color" content="#28a745">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="data:application/manifest+json,{"name":"Dengue Zero","short_name":"DengueZero","start_url":".","display":"standalone","background_color":"#28a745","theme_color":"#28a745","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9Ijk2IiBmaWxsPSIjMjhhNzQ1Ii8+CjxwYXRoIGQ9Ik0xMjAgMTI1QzEyMCAxMzEuMjMgMTE0LjIzIDEzNSAxMDggMTM1SDg0Qzc3Ljc3IDEzNSA3NiAxMzEuMjMgNzYgMTI1VjEwNUgxMjBWMTI1Wk0xMDQgNzBDMTA0IDY5LjI1IDEwMi4yNSA2NyAxMDAgNjdINFYxNjBDNCAxNjYuMjUgNS43NyAxNzEgMTIgMTcxSDE4MEMxODYuMjMgMTcxIDE4OCAxNjYuMjMgMTg4IDE2MFY2N0gxODRDMTg0IDY5LjI1IDE4Mi4yNSA2NyAxODAgNjdIMTA0Wk0xMjAgNjBDMTIwIDY2LjI1IDEyMS43NyA3MCAxMjggNzBIMTYwQzE2Ni4yMyA3MCAxNjggNjYuMjUgMTY4IDYwVjQ4SDEyMFY2MFpNNCA0OFY2MEM0IDY2LjI1IDUuNzcgNzAgMTIgNzBIMTQ0QzE1MC4yMyA3MCAxNTIgNjYuMjUgMTUyIDYwVjQ4SDRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K","sizes":"192x192","type":"image/svg+xml"}]}">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        /* ====== VARIÁVEIS CSS ====== */
+        :root {
+            --verde: #28a745;
+            --verde-escuro: #20c997;
+            --vermelho: #e74c3c;
+            --amarelo: #f1c40f;
+            --branco: #ffffff;
+            --cinza-claro: #f8f9fa;
+            --cinza-medio: #dfe6e9;
+            --cinza-escuro: #636e72;
+            --preto: #2d3436;
+        }
 
-/* GPS status bar */
-#gps-bar{background:#f0faf5;border:1px solid #9FE1CB;border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:#0F6E56;}
-#gps-bar.loading{background:#FAEEDA;border-color:#FAC775;color:#854F0B;}
-#gps-bar.error{background:#FAECE7;border-color:#F5C4B3;color:#993C1D;}
-#gps-dot{width:9px;height:9px;border-radius:50%;background:#1D9E75;flex-shrink:0;}
-#gps-bar.loading #gps-dot{background:#EF9F27;animation:pulse .8s infinite;}
-#gps-bar.error #gps-dot{background:#D85A30;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-#gps-coords{font-size:10px;color:#3B6D11;margin-top:1px;}
-#gps-bar.loading #gps-coords{color:#854F0B;}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        
+        html, body { height: 100%; overflow: hidden; }
 
-#photo-drop{border:2px dashed #b0d8bc;border-radius:10px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px;transition:border-color .15s;}
-#photo-drop:hover,#photo-drop.has{border-color:#1D9E75;background:#f0faf5;}
-#prev{width:100%;height:85px;object-fit:cover;border-radius:8px;margin-bottom:6px;display:none;}
-.fl{font-size:11px;color:#666;display:block;margin-bottom:3px;font-weight:500;}
-select,textarea,input[type=text]{width:100%;border:1px solid #dde8e4;border-radius:7px;padding:7px 10px;font-size:12px;font-family:sans-serif;margin-bottom:10px;outline:none;color:#333;}
-select:focus,textarea:focus,input[type=text]:focus{border-color:#1D9E75;}
-textarea{height:52px;resize:none;}
-.mact{display:flex;gap:8px;justify-content:flex-end;}
-.bcn{background:none;border:1px solid #ccc;border-radius:7px;padding:8px 14px;font-size:12px;cursor:pointer;color:#666;}
-.bsb{background:#1D9E75;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;}
-.bsb:hover{background:#0F6E56;}
-.bsb:disabled{background:#b0d8bc;cursor:not-allowed;}
+        /* ====== GPS FULLSCREEN ====== */
+        .gps-fullscreen {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100vh;
+            background: linear-gradient(135deg, var(--vermelho), #c0392b);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center; padding: 2rem;
+            z-index: 10000;
+            animation: gpsPulse 2s infinite;
+        }
 
-#page-lista{display:none;flex-direction:column;padding:14px;gap:8px;overflow-y:auto;flex:1;}
-#page-lista.active{display:flex;}
-.lc{background:#fff;border:1px solid #e8eee8;border-radius:10px;padding:12px 14px;display:flex;gap:10px;}
-.lno-img{width:58px;height:58px;border-radius:8px;background:#f0f4f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;}
-.lc img{width:58px;height:58px;border-radius:8px;object-fit:cover;flex-shrink:0;}
+        @keyframes gpsPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.01); } }
 
-#page-stats{display:none;flex-direction:column;padding:14px;gap:8px;overflow-y:auto;flex:1;}
-#page-stats.active{display:flex;}
-.sh{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
-.br{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
-.bl{font-size:11px;color:#555;width:130px;flex-shrink:0;}
-.bt{flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden;}
-.bf{height:100%;border-radius:4px;transition:width .6s;}
-.bc{font-size:11px;font-weight:700;min-width:18px;text-align:right;}
+        .gps-emoji { font-size: clamp(80px, 25vw, 140px); margin-bottom: 1.5rem; animation: bounce 1.5s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F6E56;color:#fff;border-radius:12px;padding:11px 20px;font-size:13px;font-weight:600;z-index:4000;display:none;box-shadow:0 4px 18px rgba(0,0,0,.22);white-space:nowrap;}
-</style>
+        .gps-titulo { font-size: clamp(1.6rem, 6vw, 2.5rem); font-weight: 900; color: white; text-shadow: 0 3px 10px rgba(0,0,0,0.3); }
+        .gps-sub { font-size: clamp(1rem, 4vw, 1.2rem); color: rgba(255,255,255,0.9); margin: 1.5rem 0; max-width: 90%; line-height: 1.5; }
+        
+        .gps-btn {
+            width: 85%; max-width: 350px; padding: 1.5rem 2rem; border: none; border-radius: 50px;
+            background: white; color: var(--vermelho);
+            font-size: clamp(1.1rem, 4.5vw, 1.4rem); font-weight: 800;
+            cursor: pointer; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+        }
+        .gps-btn:hover { transform: translateY(-5px); }
+        .gps-btn:active { transform: scale(0.96); }
+
+        /* ====== LAYOUT PRINCIPAL ====== */
+        .app-container {
+            display: none; height: 100vh;
+            flex-direction: column;
+            background: var(--cinza-claro);
+        }
+        .app-container.show { display: flex; }
+
+        /* ====== HEADER ====== */
+        .header {
+            background: linear-gradient(135deg, var(--verde), var(--verde-escuro));
+            padding: 1rem 1.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            color: white; box-shadow: 0 4px 20px rgba(40,167,69,0.3);
+            z-index: 100;
+        }
+
+        .header-title { font-size: 1.3rem; font-weight: 700; }
+        
+        .header-actions { display: flex; gap: 0.8rem; }
+        
+        .header-btn {
+            background: rgba(255,255,255,0.2); border: none;
+            padding: 0.6rem 1rem; border-radius: 20px;
+            color: white; font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; transition: all 0.3s;
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .header-btn:hover { background: rgba(255,255,255,0.3); }
+        .header-btn.active { background: white; color: var(--verde); }
+
+        /* ====== CONTEÚDO PRINCIPAL ====== */
+        .main-content {
+            flex: 1; display: flex;
+            position: relative; overflow: hidden;
+        }
+
+        /* ====== MAPA ====== */
+        #map { flex: 1; height: 100%; width: 100%; }
+
+        /* ====== PAINEL LISTA (Mobile) ====== */
+        .list-panel {
+            position: fixed; bottom: 0; left: 0;
+            width: 100%; height: 65vh;
+            background: white;
+            border-radius: 25px 25px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.4s ease;
+            z-index: 500; overflow-y: auto;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+        }
+        .list-panel.show { transform: translateY(0); }
+
+        .list-header {
+            padding: 1.5rem; border-bottom: 1px solid var(--cinza-medio);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; background: white;
+        }
+        
+        .handle {
+            width: 50px; height: 5px; background: var(--cinza-medio);
+            border-radius: 3px; position: absolute;
+            top: 10px; left: 50%; transform: translateX(-50%);
+        }
+
+        .list-title { font-size: 1.4rem; font-weight: 700; color: var(--preto); }
+        
+        .btn-fechar {
+            background: var(--cinza-medio); border: none;
+            width: 36px; height: 36px; border-radius: 50%;
+            font-size: 1.2rem; color: var(--cinza-escuro);
+            cursor: pointer;
+        }
+
+        /* ====== CONTADOR ====== */
+        .counter-banner {
+            background: linear-gradient(135deg, var(--amarelo), #f39c12);
+            color: white; padding: 1.2rem; margin: 1rem 1.5rem;
+            border-radius: 15px; text-align: center;
+            font-weight: 700; font-size: 1.2rem;
+            box-shadow: 0 8px 25px rgba(243,156,18,0.3);
+        }
+
+        /* ====== ITENS DA LISTA ====== */
+        .foco-item {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--cinza-medio);
+            cursor: pointer; transition: background 0.2s;
+            display: flex; gap: 1rem;
+        }
+        .foco-item:hover { background: var(--cinza-claro); }
+        .foco-item:last-child { border-bottom: none; }
+
+        .foco-foto { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+        .foco-info { flex: 1; min-width: 0; }
+        .foco-desc { font-weight: 600; color: var(--preto); margin-bottom: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .foco-data { font-size: 0.85rem; color: var(--cinza-escuro); }
+        .foco-coords { font-size: 0.8rem; color: #999; margin-top: 0.3rem; }
+
+        /* ====== FAB ====== */
+        .fab {
+            position: fixed; bottom: 25px; right: 25px;
+            width: 65px; height: 65px;
+            background: linear-gradient(135deg, var(--amarelo), #e67e22);
+            border: none; border-radius: 50%;
+            color: white; font-size: 2rem;
+            box-shadow: 0 8px 30px rgba(230,126,34,0.5);
+            cursor: pointer; z-index: 400;
+            transition: transform 0.3s;
+            animation: floatFab 3s ease-in-out infinite;
+        }
+        @keyframes floatFab { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .fab:active { transform: scale(0.9); }
+
+        /* ====== MODAL ====== */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 600;
+            justify-content: center; align-items: center;
+            padding: 1.5rem;
+        }
+        .modal.show { display: flex; }
+
+        .modal-content {
+            background: white; width: 100%; max-width: 450px;
+            border-radius: 25px; padding: 2rem;
+            max-height: 90vh; overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-title { font-size: 1.5rem; font-weight: 700; color: var(--preto); margin-bottom: 1.5rem; }
+        
+        .modal-close {
+            position: absolute; right: 1.5rem; top: 1.5rem;
+            background: none; border: none;
+            font-size: 2rem; color: var(--cinza-medio);
+            cursor: pointer;
+        }
+
+        .form-group { margin-bottom: 1.5rem; }
+        .form-label { display: block; margin-bottom: 0.6rem; font-weight: 600; color: var(--preto); }
+        
+        .form-input {
+            width: 100%; padding: 1rem; border: 2px solid var(--cinza-medio);
+            border-radius: 12px; font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus { outline: none; border-color: var(--verde); }
+        
+        .form-textarea {
+            width: 100%; padding: 1rem; border: 2px solid var(--cinza-medio);
+            border-radius: 12px; font-size: 1rem; min-height: 100px;
+            resize: vertical; transition: border-color 0.3s;
+        }
+        .form-textarea:focus { outline: none; border-color: var(--verde); }
+
+        #fotoPreview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; margin-top: 0.8rem; display: none; }
+
+        .btn-registrar {
+            width: 100%; padding: 1.2rem; border: none;
+            background: linear-gradient(135deg, var(--verde), var(--verde-escuro));
+            color: white; border-radius: 12px;
+            font-size: 1.1rem; font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .btn-registrar:hover { transform: translateY(-3px); }
+
+        /* ====== TELA TODOS REGISTROS (PC) ====== */
+        .full-list-view {
+            display: none; flex: 1; height: 100%; overflow-y: auto; padding: 1.5rem;
+            background: var(--cinza-claro);
+        }
+        .full-list-view.show { display: flex; flex-direction: column; }
+
+        .full-list-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .full-list-title { font-size: 1.6rem; font-weight: 700; color: var(--preto); }
+
+        .voltar-btn {
+            background: var(--verde); color: white; border: none;
+            padding: 0.8rem 1.5rem; border-radius: 10px;
+            font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+
+        .full-list-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .foco-card {
+            background: white; border-radius: 15px; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .foco-card:hover { transform: translateY(-5px); }
+
+        .foco-card-foto { width: 100%; height: 150px; object-fit: cover; }
+        .foco-card-info { padding: 1rem; }
+        .foco-card-desc { font-weight: 600; margin-bottom: 0.5rem; }
+        .foco-card-data { font-size: 0.85rem; color: var(--cinza-escuro); }
+        .foco-card-coords { font-size: 0.8rem; color: #999; margin-top: 0.5rem; }
+
+        /* ====== PC (DESKTOP) ====== */
+        @media (min-width: 992px) {
+            .app-container { flex-direction: row; }
+            
+            .header { width: 280px; height: 100%;
+                flex-direction: column; justify-content: flex-start;            align-items: stretch; padding: 0;
+            }
+            
+            .header { width: 280px; height: 100%; flex-direction: column; justify-content: flex-start; padding: 1.5rem; order: 1; }
+            .header-title { font-size: 1.5rem; margin-bottom: 2rem; }
+            .header-actions { flex-direction: column; width: 100%; gap: 0.8rem; }
+            .header-btn { width: 100%; justify-content: center; padding: 1rem; }
+            
+            .main-content { flex: 1; flex-direction: row; order: 2; }
+            #map { width: 60%; height: 100%; border-radius: 0; }
+            
+            .list-panel { 
+                position: relative; width: 40%; height: 100%; 
+                transform: none; border-radius: 0; 
+            }
+            
+            .fab { width: 70px; height: 70px; font-size: 2.2rem; bottom: 30px; right: 30px; }
+            
+            .full-list-view.show { display: none; }
+        }
+
+        /* ====== EMPTY STATE ====== */
+        .empty-state {
+            text-align: center; padding: 3rem 2rem; color: var(--cinza-escuro);
+        }
+        .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .empty-text { font-size: 1.1rem; }
+        .empty-sub { font-size: 0.9rem; margin-top: 0.5rem; color: #999; }
+    </style>
 </head>
 <body>
-<div id="app">
-  <div id="topbar">
-    <div id="topbar-logo"><div class="dot"></div>Dengue Zero</div>
-    <button class="vtab active" onclick="switchView('mapa')">🗺 Mapa</button>
-    <button class="vtab" onclick="switchView('lista')">📋 Lista</button>
-    <button class="vtab" onclick="switchView('stats')">📊 Dados</button>
-    <button id="loc-btn" onclick="gotoMyLocation()">📍 Minha localização</button>
-  </div>
-  <div id="main">
-    <div id="sidebar">
-      <div id="stats-row">
-        <div class="sc"><div class="sl">Total</div><div class="sv" id="st">4</div></div>
-        <div class="sc"><div class="sl">Alto risco</div><div class="sv red" id="sa">1</div></div>
-        <div class="sc"><div class="sl">Resolvidos</div><div class="sv green" id="sr">0</div></div>
-      </div>
-      <div id="focos-list"></div>
-    </div>
-    <div id="map-wrap">
-      <div id="map"></div>
-      <button id="upload-btn" onclick="openModal()">📷 Registrar foco</button>
-    </div>
-    <div id="page-lista"></div>
-    <div id="page-stats">
-      <div class="sh">Risco por bairro</div><div id="bb"></div>
-      <div class="sh" style="margin-top:10px;">Tipo de foco</div><div id="bt2"></div>
-      <div class="sh" style="margin-top:10px;">Status</div><div id="bs2"></div>
-    </div>
-  </div>
-</div>
-
-<div id="overlay">
-  <div id="modal">
-    <h3>📍 Registrar foco de dengue</h3>
-    <p class="sub">Sua localização é capturada automaticamente</p>
-
-    <div id="gps-bar" class="loading">
-      <div id="gps-dot"></div>
-      <div>
-        <div id="gps-txt">Obtendo sua localização GPS...</div>
-        <div id="gps-coords"></div>
-      </div>
+    <!-- GPS FULLSCREEN -->
+    <div class="gps-fullscreen" id="gpsScreen">
+        <div class="gps-emoji">📍</div>
+        <div class="gps-titulo">ATIVAR LOCALIZAÇÃO</div>
+        <div class="gps-sub">Precisamos da sua localização para registrar os focos de dengue no mapa.<br><strong>É gratuito e seguro!</strong></div>
+        <button class="gps-btn" id="gpsBtn">🔓 ATIVAR GPS</button>
     </div>
 
-    <div id="photo-drop" onclick="document.getElementById('fi').click()">
-      <img id="prev" src="" alt="preview"/>
-      <div style="font-size:26px;">📸</div>
-      <p id="ptxt" style="font-size:12px;color:#888;margin-top:4px;">Clique para tirar foto ou escolher da galeria</p>
-    </div>
-    <input type="file" id="fi" accept="image/*" capture="environment" style="display:none" onchange="onFile(event)"/>
+    <!-- APP PRINCIPAL -->
+    <div class="app-container" id="app">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-title">🦟 Dengue Zero</div>
+            <div class="header-actions">
+                <button class="header-btn active" id="btnMapa" onclick="showMapa()">
+                    🗺️ Mapa
+                </button>
+                <button class="header-btn" id="btnLista" onclick="showLista()">
+                    📋 Lista (<span id="totalCount">0</span>)
+                </button>
+                <button class="header-btn" onclick="abrirRegistrar()">
+                    ➕ Novo Foco
+                </button>
+            </div>
+        </header>
 
-    <label class="fl">Referência do local (opcional)</label>
-    <input type="text" id="ia" placeholder="Ex: próximo ao mercado, portão azul..."/>
+        <!-- CONTEÚDO PRINCIPAL -->
+        <div class="main-content">
+            <!-- MAPA -->
+            <div id="map"></div>
 
-    <label class="fl">Tipo de foco</label>
-    <select id="it">
-      <option>Caixa d'água descoberta</option>
-      <option>Pneu com água</option>
-      <option>Calha entupida</option>
-      <option>Vaso com prato</option>
-      <option>Lixo acumulado</option>
-      <option>Outro</option>
-    </select>
+            <!-- PAINEL LISTA (Mobile) -->
+            <div class="list-panel" id="listPanel">
+                <div class="list-header">
+                    <div class="handle"></div>
+                    <h2 class="list-title">📋 Registros</h2>
+                    <button class="btn-fechar" onclick="fecharLista()">✕</button>
+                </div>
+                <div class="counter-banner">
+                    🎯 Total: <span id="totalMobile">0</span> focos
+                </div>
+                <div id="listaFocos"></div>
+            </div>
 
-    <label class="fl">Nível de risco</label>
-    <select id="ir">
-      <option value="alto">Alto</option>
-      <option value="medio" selected>Médio</option>
-      <option value="baixo">Baixo</option>
-    </select>
+            <!-- TELA TODOS REGISTROS (PC) -->
+            <div class="full-list-view" id="fullListView">
+                <div class="full-list-header">
+                    <h2 class="full-list-title">📋 Todos os Registros</h2>
+                    <button class="voltar-btn" onclick="showMapa()">← Voltar ao Mapa</button>
+                </div>
+                <div class="full-list-grid" id="gridFocos"></div>
+            </div>
+        </div>
 
-    <label class="fl">Descrição (opcional)</label>
-    <textarea id="id2" placeholder="Descreva o foco..."></textarea>
+        <!-- FAB -->
+        <button class="fab" id="fabBtn" onclick="abrirRegistrar()">➕</button>
 
-    <div class="mact">
-      <button class="bcn" onclick="closeModal()">Cancelar</button>
-      <button class="bsb" id="btn-enviar" onclick="submitFoco()" disabled>✓ Enviar</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script>
-const BARREIRAS = [-12.1511, -44.9914];
-const map = L.map('map').setView(BARREIRAS, 14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'© OpenStreetMap',maxZoom:19
-}).addTo(map);
-
-const focos = [
-  {id:1,title:"Caixa d'água descoberta",addr:"Rua 7 de Setembro, 45",bairro:"Centro",tipo:"Caixa d'água descoberta",risco:"alto",desc:"Caixa sem tampa em imóvel abandonado.",status:"Pendente",lat:-12.1480,lng:-44.9930,img:null},
-  {id:2,title:"Pneu com água parada",addr:"Av. Brasil, 210",bairro:"Jardim América",tipo:"Pneu com água",risco:"medio",desc:"Vários pneus em terreno baldio.",status:"Pendente",lat:-12.1540,lng:-44.9870,img:null},
-  {id:3,title:"Calha entupida",addr:"Rua das Acácias, 78",bairro:"Nova Barreiras",tipo:"Calha entupida",risco:"baixo",desc:"Calha acumulando água da chuva.",status:"Pendente",lat:-12.1560,lng:-44.9950,img:null},
-  {id:4,title:"Lixo e poças",addr:"Rua Goiás, 512",bairro:"Centro",tipo:"Lixo acumulado",risco:"medio",desc:"Descarte irregular com poças d'água.",status:"Pendente",lat:-12.1490,lng:-44.9860,img:null}
-];
-
-let selId=null, photoData=null, userMarker=null;
-let capturedLat=null, capturedLng=null, capturedAddr='';
-const markers={};
-const pinColors={alto:"#D85A30",medio:"#EF9F27",baixo:"#1D9E75"};
-
-function makeIcon(risco,sel){
-  const c=pinColors[risco], s=sel?32:24;
-  return L.divIcon({className:'',html:`<div style="width:${s}px;height:${s}px;border-radius:50%;background:${c};border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:${sel?12:9}px;font-weight:700;color:#fff;"></div>`,iconSize:[s,s],iconAnchor:[s/2,s/2]});
-}
-
-function addMarker(f){
-  const m=L.marker([f.lat,f.lng],{icon:makeIcon(f.risco,false)}).addTo(map);
-  m.on('click',()=>selectFoco(f.id));
-  markers[f.id]=m;
-}
-focos.forEach(addMarker);
-
-function renderSidebar(){
-  document.getElementById('focos-list').innerHTML=focos.map(f=>`
-    <div class="fc${selId===f.id?' sel':''}" onclick="selectFoco(${f.id})">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
-        <span class="badge ${f.risco==='alto'?'ba':f.risco==='medio'?'bm':'bb'}">${f.risco==='alto'?'Alto':f.risco==='medio'?'Médio':'Baixo'} risco</span>
-        ${f.img?`<img src="${f.img}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;margin-left:auto;"/>` : ''}
-      </div>
-      <div style="font-size:12px;font-weight:600;color:#222;margin-bottom:2px;">${f.title}</div>
-      <div style="font-size:11px;color:#888;margin-bottom:2px;">📍 ${f.addr}</div>
-      <div style="font-size:10px;color:#aaa;">${f.tipo}</div>
-    </div>`).join('');
-  document.getElementById('st').textContent=focos.length;
-  document.getElementById('sa').textContent=focos.filter(f=>f.risco==='alto').length;
-  document.getElementById('sr').textContent=focos.filter(f=>f.status==='Resolvido').length;
-}
-
-function selectFoco(id){
-  selId=id;
-  const f=focos.find(x=>x.id===id);
-  Object.keys(markers).forEach(k=>markers[k].setIcon(makeIcon(focos.find(x=>x.id==k).risco,false)));
-  markers[id].setIcon(makeIcon(f.risco,true));
-  map.flyTo([f.lat,f.lng],17,{duration:1.2});
-  markers[id].bindPopup(`<div style="min-width:170px;font-family:sans-serif;">
-    ${f.img?`<img src="${f.img}" style="width:100%;height:72px;object-fit:cover;border-radius:6px;margin-bottom:6px;"/>`:''}
-    <div style="font-size:12px;font-weight:700;margin-bottom:2px;">${f.title}</div>
-    <div style="font-size:11px;color:#888;margin-bottom:3px;">📍 ${f.addr}</div>
-    <div style="font-size:11px;color:#555;margin-bottom:5px;">${f.desc}</div>
-    <span style="font-size:10px;padding:2px 8px;border-radius:99px;background:${f.risco==='alto'?'#FAECE7':f.risco==='medio'?'#FAEEDA':'#EAF3DE'};color:${f.risco==='alto'?'#993C1D':f.risco==='medio'?'#854F0B':'#3B6D11'};font-weight:600;">${f.risco==='alto'?'Alto':f.risco==='medio'?'Médio':'Baixo'} risco</span>
-  </div>`).openPopup();
-  renderSidebar();
-}
-
-function gotoMyLocation(){
-  if(!navigator.geolocation){showToast('⚠️ Geolocalização não disponível');return;}
-  const btn=document.getElementById('loc-btn');
-  btn.textContent='⏳ Localizando...';
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const {latitude:lat,longitude:lng}=pos.coords;
-    map.flyTo([lat,lng],16,{duration:1.5});
-    if(userMarker) userMarker.remove();
-    userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'',html:`<div style="width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 7px rgba(37,99,235,.2);"></div>`,iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map);
-    userMarker.bindPopup('<b style="font-size:12px;">📍 Você está aqui</b>').openPopup();
-    btn.textContent='📍 Minha localização';
-    showToast('📍 Localização ativada!');
-  },()=>{btn.textContent='📍 Minha localização';showToast('❌ Permissão de localização negada');},{enableHighAccuracy:true,timeout:10000});
-}
-
-function openModal(){
-  photoData=null; capturedLat=null; capturedLng=null; capturedAddr='';
-  document.getElementById('prev').style.display='none';
-  document.getElementById('photo-drop').className='';
-  document.getElementById('ptxt').textContent='Clique para tirar foto ou escolher da galeria';
-  document.getElementById('ia').value='';
-  document.getElementById('id2').value='';
-  document.getElementById('btn-enviar').disabled=true;
-  setGpsBar('loading','Obtendo sua localização GPS...','');
-  document.getElementById('overlay').classList.add('open');
-
-  if(!navigator.geolocation){
-    setGpsBar('error','GPS não disponível neste dispositivo','');
-    document.getElementById('btn-enviar').disabled=false;
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(pos=>{
-    capturedLat=pos.coords.latitude;
-    capturedLng=pos.coords.longitude;
-    const acc=Math.round(pos.coords.accuracy);
-
-    setGpsBar('ok',`📍 Localização capturada (precisão: ±${acc}m)`,`${capturedLat.toFixed(5)}, ${capturedLng.toFixed(5)}`);
-    document.getElementById('btn-enviar').disabled=false;
-
-    // Reverse geocoding via Nominatim (em segundo plano)
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${capturedLat}&lon=${capturedLng}&format=json&accept-language=pt`)
-      .then(r=>r.json())
-      .then(d=>{
-        const road=d.address.road||d.address.pedestrian||d.address.street||'';
-        const house=d.address.house_number||'';
-        const suburb=d.address.suburb||d.address.neighbourhood||d.address.quarter||'';
-        const city=d.address.city||d.address.town||'Barreiras';
-        capturedAddr=`${road}${house?' '+house:''}, ${suburb||city}`;
-        setGpsBar('ok',`📍 Localização capturada (precisão: ±${acc}m)`,capturedAddr);
-              })
-      .catch(()=>{
-        capturedAddr=`${capturedLat.toFixed(5)}, ${capturedLng.toFixed(5)}`;
-        setGpsBar('ok',`📍 Localização capturada (precisão: ±${acc}m)`,capturedAddr);
-              });
-  },err=>{
-    setGpsBar('error','Não foi possível obter localização','Verifique as permissões do GPS');
-    capturedLat=map.getCenter().lat+(Math.random()-.5)*.004;
-    capturedLng=map.getCenter().lng+(Math.random()-.5)*.004;
-    capturedAddr='Localização aproximada';
-    document.getElementById('btn-enviar').disabled=false;
-  },{enableHighAccuracy:true,timeout:10000,maximumAge:0});
-}
-
-function setGpsBar(state,txt,coords){
-  const bar=document.getElementById('gps-bar');
-  bar.className=''; bar.classList.add(state==='ok'?'':''+state);
-  document.getElementById('gps-txt').textContent=txt;
-  document.getElementById('gps-coords').textContent=coords;
-  if(state==='ok'){bar.style.background='#f0faf5';bar.style.borderColor='#9FE1CB';document.getElementById('gps-dot').style.background='#1D9E75';document.getElementById('gps-dot').style.animation='none';document.getElementById('gps-txt').style.color='#0F6E56';document.getElementById('gps-coords').style.color='#3B6D11';}
-  if(state==='loading'){bar.style.background='#FAEEDA';bar.style.borderColor='#FAC775';document.getElementById('gps-dot').style.background='#EF9F27';document.getElementById('gps-dot').style.animation='pulse .8s infinite';document.getElementById('gps-txt').style.color='#854F0B';document.getElementById('gps-coords').style.color='#854F0B';}
-  if(state==='error'){bar.style.background='#FAECE7';bar.style.borderColor='#F5C4B3';document.getElementById('gps-dot').style.background='#D85A30';document.getElementById('gps-dot').style.animation='none';document.getElementById('gps-txt').style.color='#993C1D';document.getElementById('gps-coords').style.color='#993C1D';}
-}
-
-function closeModal(){document.getElementById('overlay').classList.remove('open');}
-
-function onFile(e){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    photoData=ev.target.result;
-    const pi=document.getElementById('prev');
-    pi.src=photoData;pi.style.display='block';
-    document.getElementById('photo-drop').classList.add('has');
-    document.getElementById('ptxt').textContent='✓ Foto selecionada';
-  };
-  r.readAsDataURL(f);
-}
-
-function submitFoco(){
-  const ref=document.getElementById('ia').value;
-  const tipo=document.getElementById('it').value;
-  const risco=document.getElementById('ir').value;
-  const desc=document.getElementById('id2').value||'Sem descrição.';
-  const addr=ref?`${ref} (${capturedAddr})`:capturedAddr;
-  const bairro=capturedAddr.split(',')[1]?.trim()||'Barreiras';
-  const lat=capturedLat;
-  const lng=capturedLng;
-  const nf={id:focos.length+1,title:tipo,addr,bairro,tipo,risco,desc,status:'Pendente',lat,lng,img:photoData};
-  focos.push(nf);
-  addMarker(nf);
-  closeModal();
-  renderSidebar();renderLista();renderStats();
-  // Voa para o ponto e abre popup
-  setTimeout(()=>{
-    map.flyTo([lat,lng],18,{duration:1.3});
-    setTimeout(()=>selectFoco(nf.id),1400);
-  },200);
-  showToast('✅ Foco registrado no mapa!');
-}
-
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.style.display='block';
-  setTimeout(()=>t.style.display='none',3000);
-}
-
-function switchView(v){
-  document.querySelectorAll('.vtab').forEach((b,i)=>b.classList.toggle('active',['mapa','lista','stats'][i]===v));
-  document.getElementById('sidebar').style.display=v==='mapa'?'flex':'none';
-  document.getElementById('map-wrap').style.display=v==='mapa'?'flex':'none';
-  document.getElementById('page-lista').classList.toggle('active',v==='lista');
-  document.getElementById('page-stats').classList.toggle('active',v==='stats');
-  if(v==='lista')renderLista();
-  if(v==='stats')renderStats();
-  if(v==='mapa')setTimeout(()=>map.invalidateSize(),100);
-}
-
-function renderLista(){
-  document.getElementById('page-lista').innerHTML=focos.map(f=>`
-    <div class="lc">
-      ${f.img?`<img src="${f.img}"/>`:`<div class="lno-img">📷</div>`}
-      <div style="flex:1;">
-           </div>
-    <div id="map-wrap">
-      <div id="map"></div>
-      <button id="upload-btn" onclick="openModal()">📷 Registrar foco</button>
-    </div>
-    <div id="page-lista"></div>
-    <div id="page-stats">
-      <div class="sh">Risco por bairro</div><div id="bb"></div>
-      <div class="sh" style="margin-top:10px;">Tipo de foco</div><div id="bt2"></div>
-      <div class="sh" style="margin-top:10px;">Status</div><div id="bs2"></div>
-    </div>
-  </div>
-</div>
-
-<div id="overlay">
-  <div id="modal">
-    <h3>📍 Registrar foco de dengue</h3>
-    <p class="sub">Sua localização é capturada automaticamente</p>
-
-    <div id="gps-bar" class="loading">
-      <div id="gps-dot"></div>
-      <div>
-        <div id="gps-txt">Obtendo sua localização GPS...</div>
-        <div id="gps-coords"></div>
-      </div>
+        <!-- MODAL REGISTRO -->
+        <div class="modal" id="modalRegistro">
+            <div class="modal-content">
+                <button class="modal-close" onclick="fecharModal()">×</button>
+                <h2 class="modal-title">📸 Novo Foco de Dengue</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">📍 Localização Atual</label>
+                    <div id="locInfo" style="padding: 0.8rem; background: #e8f5e9; border-radius: 8px; color: #2e7d32; font-weight: 500;">
+                        Detectando...
+                    </div>
+                </div>
+                
+                <form id="formRegistro">
+                    <div class="form-group">
+                        <label class="form-label">📷 Foto do Foco *</label>
+                        <input type="file" id="fotoInput" accept="image/*" required class="form-input">
+                        <img id="fotoPreview" alt="Preview">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">📝 Descrição *</label>
+                        <textarea id="descInput" placeholder="O que você encontrou?&#10;Ex: Pneus com água, vaso de planta, caixa d'água..." class="form-textarea" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-registrar">✅ REGISTRAR FOCO</button>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <div id="photo-drop" onclick="document.getElementById('fi').click()">
-      <img id="prev" src="" alt="preview"/>
-      <div style="font-size:26px;">📸</div>
-      <p id="ptxt" style="font-size:12px;color:#888;margin-top:4px;">Clique para tirar foto ou escolher da galeria</p>
-    </div>
-    <input type="file" id="fi" accept="image/*" capture="environment" style="display:none" onchange="onFile(event)"/>
+    <script>
+        // ====== VARIÁVEIS ======
+        let map, currentLocation = null;
+        let focos = JSON.parse(localStorage.getItem('dengueFocos')) || [];
+        let viewAtual = 'mapa';
 
-    <label class="fl">Referência do local (opcional)</label>
-    <input type="text" id="ia" placeholder="Ex: próximo ao mercado, portão azul..."/>
+        // ====== INICIALIZAÇÃO ======
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('gpsBtn').addEventListener('click', ativarGPS);
+            document.getElementById('fotoInput').addEventListener('change', previewFoto);
+            document.getElementById('formRegistro').addEventListener('submit', registrarFoco);
+        });
 
-    <label class="fl">Tipo de foco</label>
-    <select id="it">
-      <option>Caixa d'água descoberta</option>
-      <option>Pneu com água</option>
-      <option>Calha entupida</option>
-      <option>Vaso com prato</option>
-      <option>Lixo acumulado</option>
-      <option>Outro</option>
-    </select>
+        // ====== ATIVAR GPS ======
+        async function ativarGPS() {
+            const gpsBtn = document.getElementById('gpsBtn');
+            const gpsScreen = document.getElementById('gpsScreen');
+            const app = document.getElementById('app');
+            
+            gpsBtn.textContent = '⏳ CONECTANDO...';
+            gpsBtn.disabled = true;
 
-    <label class="fl">Nível de risco</label>
-    <select id="ir">
-      <option value="alto">Alto</option>
-      <option value="medio" selected>Médio</option>
-      <option value="baixo">Baixo</option>
-    </select>
+            if (!navigator.geolocation) {
+                alert('❌ GPS não suportado! Use Chrome ou Safari.');
+                gpsBtn.disabled = false;
+                return;
+            }
 
-    <label class="fl">Descrição (opcional)</label>
-    <textarea id="id2" placeholder="Descreva o foco..."></textarea>
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 30000
+                    });
+                });
 
-    <div class="mact">
-      <button class="bcn" onclick="closeModal()">Cancelar</button>
-      <button class="bsb" id="btn-enviar" onclick="submitFoco()" disabled>✓ Enviar</button>
-    </div>
-  </div>
-</div>
+                currentLocation = [position.coords.latitude, position.coords.longitude];
+                
+                gpsScreen.style.display = 'none';
+                app.classList.add('show');
+                
+                initMap();
+                atualizarUI();
+                carregarMarcadores();
 
-<div id="toast"></div>
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-<script>
-const BARREIRAS = [-12.1511, -44.9914];
-const map = L.map('map').setView(BARREIRAS, 14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'© OpenStreetMap',maxZoom:19
-}).addTo(map);
+            } catch (error) {
+                gpsBtn.textContent = '🔄 TENTAR NOVAMENTE';
+                gpsBtn.disabled = false;
+                
+                let msg = '❌ Erro ao ativar GPS:\n\n';
+                if (error.code === 1) msg += '• Permissão negada\n• Clique em "Permitir" no popup\n';
+                else if (error.code === 2) msg += '• GPS desligado\n• Ligue nas configurações';
+                else msg += '• Tempo esgotado\n• Tente novamente';
+                alert(msg);
+            }
+        }
 
-const focos = [
-  {id:1,title:"Caixa d'água descoberta",addr:"Rua 7 de Setembro, 45",bairro:"Centro",tipo:"Caixa d'água descoberta",risco:"alto",desc:"Caixa sem tampa em imóvel abandonado.",status:"Pendente",lat:-12.1480,lng:-44.9930,img:null},
-  {id:2,title:"Pneu com água parada",addr:"Av. Brasil, 210",bairro:"Jardim América",tipo:"Pneu com água",risco:"medio",desc:"Vários pneus em terreno baldio.",status:"Pendente",lat:-12.1540,lng:-44.9870,img:null},
-  {id:3,title:"Calha entupida",addr:"Rua das Acácias, 78",bairro:"Nova Barreiras",tipo:"Calha entupida",risco:"baixo",desc:"Calha acumulando água da chuva.",status:"Pendente",lat:-12.1560,lng:-44.9950,img:null},
-  {id:4,title:"Lixo e poças",addr:"Rua Goiás, 512",bairro:"Centro",tipo:"Lixo acumulado",risco:"medio",desc:"Descarte irregular com poças d'água.",status:"Pendente",lat:-12.1490,lng:-44.9860,img:null}
-];
+        // ====== MAPA ======
+        function initMap() {
+            map = L.map('map').setView(currentLocation, 16);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
 
-let selId=null, photoData=null, userMarker=null;
-let capturedLat=null, capturedLng=null, capturedAddr='';
-const markers={};
-const pinColors={alto:"#D85A30",medio:"#EF9F27",baixo:"#1D9E75"};
+            // Marcador usuário
+            const userIcon = L.divIcon({
+                html: '<div style="background:#27ae60;color:white;padding:6px 12px;border-radius:15px;font-weight:bold;font-size:12px;white-space:nowrap">🟢 Você</div>',
+                iconSize: [80, 30],
+                iconAnchor: [40, 30]
+            });
+            
+            L.marker(currentLocation, {icon: userIcon}).addTo(map)
+                .bindPopup('<b>✅ Sua posição!</b><br>Clique em + para registrar')
+                .openPopup();
+        }
 
-function makeIcon(risco,sel){
-  const c=pinColors[risco], s=sel?32:24;
-  return L.divIcon({className:'',html:`<div style="width:${s}px;height:${s}px;border-radius:50%;background:${c};border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:${sel?12:9}px;font-weight:700;color:#fff;"></div>`,iconSize:[s,s],iconAnchor:[s/2,s/2]});
-}
+        // ====== UI ======
+        function atualizarUI() {
+            document.getElementById('totalCount').textContent = focos.length;
+            document.getElementById('totalMobile').textContent = focos.length;
+            renderizarLista();
+            renderizarGrid();
+        }
 
-function addMarker(f){
-  const m=L.marker([f.lat,f.lng],{icon:makeIcon(f.risco,false)}).addTo(map);
-  m.on('click',()=>selectFoco(f.id));
-  markers[f.id]=m;
-}
-focos.forEach(addMarker);
+        // ====== RENDERIZAR LISTA ======
+        function renderizarLista() {
+            const lista = document.getElementById('listaFocos');
+            
+            if (focos.length === 0) {
+                lista.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🦟</div>
+                        <div class="empty-text">Nenhum foco registrado</div>
+                        <div class="empty-sub">Clique em + para registrar</div>
+                    </div>
+                `;
+                return;
+            }
 
-function renderSidebar(){
-  document.getElementById('focos-list').innerHTML=focos.map(f=>`
-    <div class="fc${selId===f.id?' sel':''}" onclick="selectFoco(${f.id})">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
-        <span class="badge ${f.risco==='alto'?'ba':f.risco==='medio'?'bm':'bb'}">${f.risco==='alto'?'Alto':f.risco==='medio'?'Médio':'Baixo'} risco</span>
-        ${f.img?`<img src="${f.img}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;margin-left:auto;"/>` : ''}
-      </div>
-      <div style="font-size:12px;font-weight:600;color:#222;margin-bottom:2px;">${f.title}</div>
-      <div style="font-size:11px;color:#888;margin-bottom:2px;">📍 ${f.addr}</div>
-      <div style="font-size:10px;color:#aaa;">${f.tipo}</div>
-    </div>`).join('');
-  document.getElementById('st').textContent=focos.length;
-  document.getElementById('sa').textContent=focos.filter(f=>f.risco==='alto').length;
-  document.getElementById('sr').textContent=focos.filter(f=>f.status==='Resolvido').length;
-}
+            lista.innerHTML = focos.map((foco, index) => `
+                <div class="foco-item" onclick="irParaFoco(${foco.lat}, ${foco.lng})">
+                    <img src="${foco.foto}" class="foco-foto" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSI+PHJlY3QgY3g9IjMyIiBjeT0iMzIiIHI9IjMyIiBmaWxsPSIjZGREREUiLz48dGV4dCB4PSIzMiIgeT0iMzYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiPkNhcnJlZ288L3RleHQ+PC9zdmc+'">
+                    <div class="foco-info">
+                        <div class="foco-desc">${foco.descricao.substring(0, 35)}${foco.descricao.length > 35 ? '...' : ''}</div>
+                        <div class="foco-data">${foco.data}</div>
+                        <div class="foco-coords">${foco.lat.toFixed(4)}, ${foco.lng.toFixed(4)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-function selectFoco(id){
-  selId=id;
-  const f=focos.find(x=>x.id===id);
-  Object.keys(markers).forEach(k=>markers[k].setIcon(makeIcon(focos.find(x=>x.id==k).risco,false)));
-  markers[id].setIcon(makeIcon(f.risco,true));
-  map.flyTo([f.lat,f.lng],17,{duration:1.2});
-  markers[id].bindPopup(`<div style="min-width:170px;font-family:sans-serif;">
-    ${f.img?`<img src="${f.img}" style="width:100%;height:72px;object-fit:cover;border-radius:6px;margin-bottom:6px;"/>`:''}
-    <div style="font-size:12px;font-weight:700;margin-bottom:2px;">${f.title}</div>
-    <div style="font-size:11px;color:#888;margin-bottom:3px;">📍 ${f.addr}</div>
-    <div style="font-size:11px;color:#555;margin-bottom:5px;">${f.desc}</div>
-    <span style="font-size:10px;padding:2px 8px;border-radius:99px;background:${f.risco==='alto'?'#FAECE7':f.risco==='medio'?'#FAEEDA':'#EAF3DE'};color:${f.risco==='alto'?'#993C1D':f.risco==='medio'?'#854F0B':'#3B6D11'};font-weight:600;">${f.risco==='alto'?'Alto':f.risco==='medio'?'Médio':'Baixo'} risco</span>
-  </div>`).openPopup();
-  renderSidebar();
-}
+        // ====== RENDERIZAR GRID (PC) ======
+        function renderizarGrid() {
+            const grid = document.getElementById('gridFocos');
+            
+            if (focos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🦟</div>
+                        <div class="empty-text">Nenhum foco registrado</div>
+                    </div>
+                `;
+                return;
+            }
 
-function gotoMyLocation(){
-  if(!navigator.geolocation){showToast('⚠️ Geolocalização não disponível');return;}
-  const btn=document.getElementById('loc-btn');
-  btn.textContent='⏳ Localizando...';
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const {latitude:lat,longitude:lng}=pos.coords;
-    map.flyTo([lat,lng],16,{duration:1.5});
-    if(userMarker) userMarker.remove();
-    userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'',html:`<div style="width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 7px rgba(37,99,235,.2);"></div>`,iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map);
-    userMarker.bindPopup('<b style="font-size:12px;">📍 Você está aqui</b>').openPopup();
-    btn.textContent='📍 Minha localização';
-    showToast('📍 Localização ativada!');
-  },()=>{btn.textContent='📍 Minha localização';showToast('❌ Permissão de localização negada');},{enableHighAccuracy:true,timeout:10000});
-}
+            grid.innerHTML = focos.map(foco => `
+                <div class="foco-card" onclick="irParaFoco(${foco.lat}, ${foco.lng})">
+                    <img src="${foco.foto}" class="foco-card-foto" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZGREREUiLz48dGV4dCB4PSIxMDAiIHk9IjEwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSIgZm9udC1zaXplPSIyMCI+Q2FycmVnbzwvdGV4dD48L3N2Zz4='">
+                    <div class="foco-card-info">
+                        <div class="foco-card-desc">${foco.descricao}</div>
+                        <div class="foco-card-data">${foco.data}</div>
+                        <div class="foco-card-coords">📍 ${foco.lat.toFixed(5)}, ${foco.lng.toFixed(5)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-function openModal(){
-  photoData=null; capturedLat=null; capturedLng=null; capturedAddr='';
-  document.getElementById('prev').style.display='none';
-  document.getElementById('photo-drop').className='';
-  document.getElementById('ptxt').textContent='Clique para tirar foto ou escolher da galeria';
-  document.getElementById('ia').value='';
-  document.getElementById('id2').value='';
-  document.getElementById('btn-enviar').disabled=true;
-  setGpsBar('loading','Obtendo sua localização GPS...','');
-  document.getElementById('overlay').classList.add('open');
+        // ====== CARREGAR MARCADORES ======
+        function carregarMarcadores() {
+            focos.forEach(foco => {
+                const icon = L.divIcon({
+                    html: '<div style="font-size:28px">🦟</div>',
+                    iconSize: [30, 30]
+                });
+                
+                L.marker([foco.lat, foco.lng], {icon: icon}).addTo(map)
+                    .bindPopup(`
+                        <div style="min-width:200px">
+                            <img src="${foco.foto}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px">
+                            <div style="font-weight:600">${foco.descricao}</div>
+                            <div style="color:#666;font-size:12px">${foco.data}</div>
+                        </div>
+                    `);
+            });
+        }
 
-  if(!navigator.geolocation){
-    setGpsBar('error','GPS não disponível neste dispositivo','');
-    document.getElementById('btn-enviar').disabled=false;
-    return;
-  }
+        // ====== NAVEGAÇÃO ======
+        function showMapa() {
+            viewAtual = 'mapa';
+            document.getElementById('btnMapa').classList.add('active');
+            document.getElementById('btnLista').classList.remove('active');
+            document.getElementById('listPanel').classList.remove('show');
+            document.getElementById('fullListView').classList.remove('show');
+        }
 
-  navigator.geolocation.getCurrentPosition(pos=>{
-    capturedLat=pos.coords.latitude;
-    capturedLng=pos.coords.longitude;
-    const acc=Math.round(pos.coords.accuracy);
+        function showLista() {
+            viewAtual = 'lista';
+            document.getElementById('btnMapa').classList.remove('active');
+            document.getElementById('btnLista').classList.add('active');
+            
+            if (window.innerWidth < 992) {
+                document.getElementById('listPanel').classList.add('show');
+            } else {
+                document.getElementById('fullListView').classList.add('show');
+            }
+        }
 
-    // Reverse geocoding via Nominatim
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${capturedLat}&lon=${capturedLng}&format=json&accept-language=pt`)
-      .then(r=>r.json())
-      .then(d=>{
-        const road=d.address.road||d.address.pedestrian||d.address.street||'';
-        const house=d.address.house_number||'';
-        const suburb=d.address.suburb||d.address.neighbourhood||d.address.quarter||'';
-        const city=d.address.city||d.address.town||'Barreiras';
-        capturedAddr=`${road}${house?' '+house:''}, ${suburb||city}`;
-        setGpsBar('ok',`📍 Localização capturada (precisão: ±${acc}m)`,capturedAddr);
-        document.getElementById('btn-enviar').disabled=false;
-      })
-      .catch(()=>{
-        capturedAddr=`${capturedLat.toFixed(5)}, ${capturedLng.toFixed(5)}`;
-        setGpsBar('ok',`📍 Localização capturada (precisão: ±${acc}m)`,capturedAddr);
-        document.getElementById('btn-enviar').disabled=false;
-      });
-  },err=>{
-    setGpsBar('error','Não foi possível obter localização','Verifique as permissões do GPS');
-    capturedLat=map.getCenter().lat+(Math.random()-.5)*.004;
-    capturedLng=map.getCenter().lng+(Math.random()-.5)*.004;
-    capturedAddr='Localização aproximada';
-    document.getElementById('btn-enviar').disabled=false;
-  },{enableHighAccuracy:true,timeout:10000,maximumAge:0});
-}
+        function fecharLista() {
+            document.getElementById('listPanel').classList.remove('show');
+        }
 
-function setGpsBar(state,txt,coords){
-  const bar=document.getElementById('gps-bar');
-  bar.className=''; bar.classList.add(state==='ok'?'':''+state);
-  document.getElementById('gps-txt').textContent=txt;
-  document.getElementById('gps-coords').textContent=coords;
-  if(state==='ok'){bar.style.background='#f0faf5';bar.style.borderColor='#9FE1CB';document.getElementById('gps-dot').style.background='#1D9E75';document.getElementById('gps-dot').style.animation='none';document.getElementById('gps-txt').style.color='#0F6E56';document.getElementById('gps-coords').style.color='#3B6D11';}
-  if(state==='loading'){bar.style.background='#FAEEDA';bar.style.borderColor='#FAC775';document.getElementById('gps-dot').style.background='#EF9F27';document.getElementById('gps-dot').style.animation='pulse .8s infinite';document.getElementById('gps-txt').style.color='#854F0B';document.getElementById('gps-coords').style.color='#854F0B';}
-  if(state==='error'){bar.style.background='#FAECE7';bar.style.borderColor='#F5C4B3';document.getElementById('gps-dot').style.background='#D85A30';document.getElementById('gps-dot').style.animation='none';document.getElementById('gps-txt').style.color='#993C1D';document.getElementById('gps-coords').style.color='#993C1D';}
-}
+        function irParaFoco(lat, lng) {
+            if (map) {
+                map.setView([lat, lng], 18);
+                showMapa();
+            }
+        }
 
-function closeModal(){document.getElementById('overlay').classList.remove('open');}
+        // ====== MODAL ======
+        function abrirRegistrar() {
+            if (!currentLocation) {
+                alert('🔴 Ative o GPS primeiro!');
+                return;
+            }
+            document.getElementById('modalRegistro').classList.add('show');
+            document.getElementById('locInfo').innerHTML = `📍 ${currentLocation[0].toFixed(5)}, ${currentLocation[1].toFixed(5)}`;
+            document.getElementById('fotoInput').value = '';
+            document.getElementById('fotoPreview').style.display = 'none';
+            document.getElementById('descInput').value = '';
+        }
 
-function onFile(e){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    photoData=ev.target.result;
-    const pi=document.getElementById('prev');
-    pi.src=photoData;pi.style.display='block';
-    document.getElementById('photo-drop').classList.add('has');
-    document.getElementById('ptxt').textContent='✓ Foto selecionada';
-  };
-  r.readAsDataURL(f);
-}
+        function fecharModal() {
+            document.getElementById('modalRegistro').classList.remove('show');
+        }
 
-function submitFoco(){
-  const ref=document.getElementById('ia').value;
-  const tipo=document.getElementById('it').value;
-  const risco=document.getElementById('ir').value;
-  const desc=document.getElementById('id2').value||'Sem descrição.';
-  const addr=ref?`${ref} (${capturedAddr})`:capturedAddr;
-  const bairro=capturedAddr.split(',')[1]?.trim()||'Barreiras';
-  const lat=capturedLat;
-  const lng=capturedLng;
-  const nf={id:focos.length+1,title:tipo,addr,bairro,tipo,risco,desc,status:'Pendente',lat,lng,img:photoData};
-  focos.push(nf);
-  addMarker(nf);
-  closeModal();
-  renderSidebar();renderLista();renderStats();
-  // Voa para o ponto e abre popup
-  setTimeout(()=>{
-    map.flyTo([lat,lng],18,{duration:1.3});
-    setTimeout(()=>selectFoco(nf.id),1400);
-  },200);
-  showToast('✅ Foco registrado no mapa!');
-}
+        function previewFoto(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    document.getElementById('fotoPreview').src = ev.target.result;
+                    document.getElementById('fotoPreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
 
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.style.display='block';
-  setTimeout(()=>t.style.display='none',3000);
-}
+        // ====== REGISTRAR ======
+        async function registrarFoco(e) {
+            e.preventDefault();
+            
+            const fotoFile = document.getElementById('fotoInput').files[0];
+            const descricao = document.getElementById('descInput').value.trim();
+            const btn = document.querySelector('.btn-registrar');
+            
+            if (!fotoFile || !descricao) {
+                alert('📷 Preencha foto e descrição!');
+                return;
+            }
 
-function switchView(v){
-  document.querySelectorAll('.vtab').forEach((b,i)=>b.classList.toggle('active',['mapa','lista','stats'][i]===v));
-  document.getElementById('sidebar').style.display=v==='mapa'?'flex':'none';
-  document.getElementById('map-wrap').style.display=v==='mapa'?'flex':'none';
-  document.getElementById('page-lista').classList.toggle('active',v==='lista');
-  document.getElementById('page-stats').classList.toggle('active',v==='stats');
-  if(v==='lista')renderLista();
-  if(v==='stats')renderStats();
-  if(v==='mapa')setTimeout(()=>map.invalidateSize(),100);
-}
+            btn.textContent = '⏳ REGISTRANDO...';
+            btn.disabled = true;
 
-function renderLista(){
-  document.getElementById('page-lista').innerHTML=focos.map(f=>`
-    <div class="lc">
-      ${f.img?`<img src="${f.img}"/>`:`<div class="lno-img">📷</div>`}
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:2px;">${f.title}</div>
-        <div style="font-size:11px;color:#888;margin-bottom:4px;">📍 ${f.addr}</div>
-        <span class="badge ${f.risco==='alto'?'ba':f.risco==='medio'?'bm':'bb'}">${f.risco==='alto'?'Alto':f.risco==='medio'?'Médio':'Baixo'} risco</span>
-      </div>
-    </div>`).join('');
-}
+            try {
+                const fotoBase64 = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(fotoFile);
+                });
 
-function renderStats(){
-  const cnt=(key)=>focos.reduce((a,f)=>{a[f[key]]=(a[f[key]]||0)+1;return a;},{});
-  const bars=(obj,color)=>{
-    const max=Math.max(...Object.values(obj),1);
-    return Object.entries(obj).map(([k,v])=>`<div class="br"><div class="bl">${k}</div><div class="bt"><div class="bf" style="width:${Math.round(v/max*100)}%;background:${color}"></div></div><div class="bc">${v}</div></div>`).join('');
-  };
-  document.getElementById('bb').innerHTML=bars(cnt('bairro'),'#1D9E75');
-  document.getElementById('bt2').innerHTML=bars(cnt('tipo'),'#378ADD');
-  document.getElementById('bs2').innerHTML=bars(cnt('status'),'#BA7517');
-}
+                const novoFoco = {
+                    id: Date.now(),
+                    lat: currentLocation[0],
+                    lng: currentLocation[1],
+                    foto: fotoBase64,
+                    descricao: descricao.substring(0, 250),
+                    data: new Date().toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})
+                };
 
-renderSidebar();
-</script>
+                focos.unshift(novoFoco);
+                localStorage.setItem('dengueFocos', JSON.stringify(focos));
+
+                // Marcador
+                const icon = L.divIcon({
+                    html: '<div style="font-size:28px">🦟</div>',
+                    iconSize: [30, 30]
+                });
+                L.marker([novoFoco.lat, novoFoco.lng], {icon: icon}).addTo(map);
+
+                atualizarUI();
+                fecharModal();
+                btn.textContent = '✅ REGISTRADO!';
+                
+                                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+                setTimeout(() => {
+                    btn.textContent = '✅ REGISTRAR FOCO';
+                    btn.disabled = false;
+                }, 2000);
+
+            } catch (erro) {
+                console.error(erro);
+                alert('❌ Erro ao registrar!');
+                btn.textContent = '✅ REGISTRAR FOCO';
+                btn.disabled = false;
+            }
+        }
+
+        // ====== DEBUG ======
+        window.debug = {
+            limpar: function() {
+                if (confirm('🗑️ Limpar todos os registros?')) {
+                    localStorage.removeItem('dengueFocos');
+                    location.reload();
+                }
+            },
+            ver: function() {
+                alert('Total: ' + focos.length + ' focos\nGPS: ' + currentLocation);
+            }
+        };
+    </script>
 </body>
 </html>
